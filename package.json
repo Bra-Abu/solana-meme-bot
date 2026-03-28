@@ -1,0 +1,24 @@
+{
+  "name": "solana-meme-bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@jup-ag/api": "^6.0.48",
+    "@solana/web3.js": "^1.98.4",
+    "axios": "^1.14.0",
+    "better-sqlite3": "^12.8.0",
+    "bs58": "^6.0.0",
+    "dotenv": "^17.3.1",
+    "helius-sdk": "^2.2.2",
+    "node-cron": "^4.2.1",
+    "node-telegram-bot-api": "^0.67.0"
+  }
+}
