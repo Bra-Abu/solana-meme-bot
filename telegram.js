@@ -3,6 +3,7 @@ const axios = require('axios');
 const log = require('./logger');
 const config = require('./config');
 const { isPaused, setPaused } = require('./state');
+const chain = require('./chain');
 
 const BASE = `https://api.telegram.org/bot${config.telegramBotToken}`;
 
@@ -78,19 +79,29 @@ async function alertError(symbol, action, message) {
 }
 
 // ── Format /status response ────────────────────────────────────────────────────
-function formatStatus() {
+async function formatStatus() {
   const positions = log.getOpenPositions();
   const paused = isPaused();
+
+  let balanceLine = '';
+  try {
+    const bal = await chain.getWalletBalance();
+    balanceLine = `💰 Balance: ${bal.sol.toFixed(4)} SOL ($${bal.usd.toFixed(2)})\n`;
+  } catch {
+    balanceLine = '';
+  }
 
   if (!positions.length) {
     return `📊 <b>Bot Status</b>\n\n` +
       `State: ${paused ? '⏸ Paused' : '▶️ Running'}\n` +
+      balanceLine +
       `Open positions: 0\n\n` +
       `No active positions.`;
   }
 
   let text = `📊 <b>Bot Status</b>\n\n` +
     `State: ${paused ? '⏸ Paused' : '▶️ Running'}\n` +
+    balanceLine +
     `Open positions: ${positions.length}\n\n`;
 
   for (const pos of positions) {
@@ -187,11 +198,11 @@ async function pollCommands() {
 
       switch (cmd) {
         case 'status':
-          await send(formatStatus());
+          await send(await formatStatus());
           break;
 
         case 'positions':
-          await send(formatStatus());
+          await send(await formatStatus());
           break;
 
         case 'pnl':

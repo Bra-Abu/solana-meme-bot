@@ -180,6 +180,17 @@ async function getTokenPriceUSD(tokenMint) {
   }
 }
 
+// ── Get wallet SOL balance ─────────────────────────────────────────────────────
+async function getWalletBalance() {
+  const connection = getConnection();
+  const keypair = getKeypair();
+  const lamports = await connection.getBalance(keypair.publicKey);
+  const sol = lamports / 1e9;
+  const solPrice = await getSolPriceUSD();
+  const usd = sol * solPrice;
+  return { sol, usd, address: keypair.publicKey.toString() };
+}
+
 module.exports = {
   getConnection,
   getKeypair,
@@ -188,5 +199,6 @@ module.exports = {
   buyToken,
   sellToken,
   getTokenPriceUSD,
+  getWalletBalance,
   SOL_MINT,
 };

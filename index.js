@@ -3,6 +3,7 @@ require('dotenv').config();
 
 const { startScanner, processToken } = require('./scanner');
 const { restoreOpenPositions } = require('./trader');
+const { getWalletBalance } = require('./chain');
 const tg = require('./telegram');
 const config = require('./config');
 const log = require('./logger');
@@ -65,9 +66,15 @@ async function main() {
   // Startup notification
   const openPositions = log.getOpenPositions();
   const pnl = log.getPnL();
+  let balanceLine = '';
+  try {
+    const bal = await getWalletBalance();
+    balanceLine = `💰 Balance: ${bal.sol.toFixed(4)} SOL ($${bal.usd.toFixed(2)})\n`;
+  } catch { balanceLine = ''; }
 
   await tg.send(
     '🟢 <b>Meme Bot Online</b>\n\n' +
+    balanceLine +
     `Open positions: ${openPositions.length}\n` +
     `All-time P&L: $${(pnl?.total_profit || 0).toFixed(2)}\n\n` +
     `Type / to see all commands.`
