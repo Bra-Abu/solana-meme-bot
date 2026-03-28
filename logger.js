@@ -97,7 +97,9 @@ const log = {
 
   // P&L queries
   getPnL(days = null) {
-    const where = days ? `WHERE timestamp > datetime('now', '-${days} days')` : '';
+    const where = days
+      ? `WHERE timestamp > datetime('now', '-${days} days') AND action IN ('tp1','moonbag_exit','stop_loss','profit_floor')`
+      : `WHERE action IN ('tp1','moonbag_exit','stop_loss','profit_floor')`;
     return db.prepare(`
       SELECT
         COUNT(DISTINCT token_mint)  AS trades,
@@ -108,7 +110,6 @@ const log = {
         MIN(profit_usd)             AS worst_trade
       FROM trades
       ${where}
-      AND action IN ('tp1','moonbag_exit','stop_loss','profit_floor')
     `).get();
   },
 

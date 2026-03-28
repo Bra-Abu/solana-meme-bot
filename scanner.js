@@ -1,23 +1,17 @@
-// Token scanner — monitors Helius for new Solana tokens
-const { Helius } = require('helius-sdk');
+// Token scanner — monitors Solana for new Raydium tokens
 const { runAllFilters } = require('./filters');
 const { executeBuy } = require('./trader');
+const { getConnection } = require('./chain');
 const log = require('./logger');
 const tg = require('./telegram');
 const config = require('./config');
-
-let _helius = null;
-const processing = new Set(); // prevent duplicate processing
 const { isPaused, setPaused } = require('./state');
 
-function getHelius() {
-  if (!_helius) _helius = new Helius(config.heliusApiKey);
-  return _helius;
-}
+const processing = new Set(); // prevent duplicate processing
 
 // ── Process a candidate token ──────────────────────────────────────────────────
 async function processToken(tokenMint) {
-  if (_paused) return;
+  if (isPaused()) return;
   if (processing.has(tokenMint)) return;
   if (log.wasScanned(tokenMint)) return;
 
@@ -51,17 +45,16 @@ async function processToken(tokenMint) {
   }
 }
 
-// ── Start WebSocket listener via Helius ───────────────────────────────────────
+// ── Start WebSocket listener via Helius RPC ───────────────────────────────────
 function startScanner() {
-  const helius = getHelius();
+  const connection = getConnection();
 
-  console.log('[SCANNER] Starting Helius WebSocket listener...');
+  console.log('[SCANNER] Starting WebSocket listener for new Raydium pools...');
 
-  // Subscribe to new Raydium + Orca pool creation events
-  // These indicate a new token pair was created
-  helius.connection.onProgramAccountChange(
-    // Raydium AMM program
-    { pubkey: '675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8', commitment: 'confirmed' },
+  // Subscribe to new Raydium AMM pool creation events
+  const { PublicKey } = require('@solana/web3.js');
+  connection.onProgramAccountChange(
+    new PublicKey('675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8'), // Raydium AMM program
     async (accountInfo, context) => {
       // Extract token mint from new pool account data
       try {
