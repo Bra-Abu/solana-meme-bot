@@ -19,6 +19,16 @@ function getProfitFloorPct(currentMultiplier) {
 // ── Execute Buy ────────────────────────────────────────────────────────────────
 async function executeBuy(tokenMint, tokenSymbol) {
   try {
+    // Check wallet has enough balance before attempting buy
+    const { sol, usd } = await chain.getWalletBalance();
+    const requiredUSD = config.trade.entryUSD * 1.1; // 10% buffer for gas
+    if (usd < requiredUSD) {
+      const msg = `Insufficient balance: $${usd.toFixed(2)} (${sol.toFixed(4)} SOL) — need $${requiredUSD.toFixed(2)} for trade + gas`;
+      console.warn(`[TRADER] ⚠️ ${msg}`);
+      await tg.send(`⚠️ <b>Low Balance — Buy Skipped</b>\n\n${msg}\n\nTop up your wallet to resume trading.`);
+      return;
+    }
+
     console.log(`[TRADER] Buying ${tokenSymbol || tokenMint.slice(0, 8)}...`);
 
     const result = await chain.buyToken(tokenMint, config.trade.entryUSD);
