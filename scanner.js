@@ -106,11 +106,10 @@ function startScanner() {
         const lpMint      = accs[7];
         const quoteTokenAccount = SOL_MINTS.has(pcMint) ? accs[11] : accs[10];
 
-        if (seenPools.has(poolAddress)) return;
-        seenPools.add(poolAddress);
-
         const newToken = SOL_MINTS.has(coinMint) ? pcMint : coinMint;
         if (!newToken || IGNORE_MINTS.has(newToken) || SOL_MINTS.has(newToken)) return;
+        if (seenPools.has(newToken)) return;
+        seenPools.add(newToken);
 
         console.log(`[SCANNER] 🆕 New Raydium pool: ${newToken.slice(0, 8)}`);
         await processToken(newToken, poolAddress, { quoteTokenAccount, lpMint, dex: 'raydium' });
@@ -143,11 +142,10 @@ function startScanner() {
         const lpMint            = accs[4];
         const quoteTokenAccount = accs[6];
 
-        if (seenPools.has(poolAddress)) return;
-        seenPools.add(poolAddress);
-
         const newToken = SOL_MINTS.has(baseMint) ? quoteMint : baseMint;
         if (!newToken || IGNORE_MINTS.has(newToken) || SOL_MINTS.has(newToken)) return;
+        if (seenPools.has(newToken)) return;
+        seenPools.add(newToken);
 
         console.log(`[SCANNER] 🆕 New PumpSwap pool: ${newToken.slice(0, 8)}`);
         await processToken(newToken, poolAddress, { quoteTokenAccount, lpMint, dex: 'pumpswap' });
