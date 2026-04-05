@@ -9,8 +9,12 @@ const { isPaused } = require('./state');
 const processing = new Set();
 const seenPools   = new Set();
 
-const RAYDIUM_ID  = '675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8';
-const PUMPSWAP_ID = 'pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA';
+const RAYDIUM_ID    = '675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8';
+const PUMPSWAP_ID   = 'pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA';
+const EVAL_DELAY_MS = 2 * 60 * 1000; // wait 2 min before evaluating a new pool
+
+// Reasons that are temporary — don't permanently mark as scanned
+const TEMP_FAILURES = new Set(['No pool signatures found', 'Too new']);
 
 const SOL_MINTS = new Set([
   'So11111111111111111111111111111111111111112',
@@ -36,7 +40,9 @@ async function processToken(tokenMint, poolAddress, poolMeta = {}) {
     const result = await runAllFilters(tokenMint, poolAddress, poolMeta);
 
     if (!result.passed) {
-      log.markScanned(tokenMint, false, result.reason);
+      if (!TEMP_FAILURES.has(result.reason)) {
+        log.markScanned(tokenMint, false, result.reason);
+      }
       console.log(`[SCANNER] ❌ ${tokenMint.slice(0, 8)} — ${result.reason}`);
       return;
     }
@@ -111,8 +117,8 @@ function startScanner() {
         if (seenPools.has(newToken)) return;
         seenPools.add(newToken);
 
-        console.log(`[SCANNER] 🆕 New Raydium pool: ${newToken.slice(0, 8)}`);
-        await processToken(newToken, poolAddress, { quoteTokenAccount, lpMint, dex: 'raydium' });
+        console.log(`[SCANNER] 🆕 New Raydium pool: ${newToken.slice(0, 8)} — evaluating in 2 min`);
+        setTimeout(() => processToken(newToken, poolAddress, { quoteTokenAccount, lpMint, dex: 'raydium' }), EVAL_DELAY_MS);
       } catch { }
     },
     'confirmed'
@@ -147,8 +153,8 @@ function startScanner() {
         if (seenPools.has(newToken)) return;
         seenPools.add(newToken);
 
-        console.log(`[SCANNER] 🆕 New PumpSwap pool: ${newToken.slice(0, 8)}`);
-        await processToken(newToken, poolAddress, { quoteTokenAccount, lpMint, dex: 'pumpswap' });
+        console.log(`[SCANNER] 🆕 New PumpSwap pool: ${newToken.slice(0, 8)} — evaluating in 2 min`);
+        setTimeout(() => processToken(newToken, poolAddress, { quoteTokenAccount, lpMint, dex: 'pumpswap' }), EVAL_DELAY_MS);
       } catch { }
     },
     'confirmed'
