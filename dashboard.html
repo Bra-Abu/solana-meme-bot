@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Solana Meme Bot — Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg:       #0b0b0f;
+    --card:     #13131a;
+    --border:   #1f1f2e;
+    --green:    #00e676;
+    --red:      #ff4d4d;
+    --yellow:   #ffd600;
+    --blue:     #4fc3f7;
+    --purple:   #7c4dff;
+    --text:     #e0e0e0;
+    --muted:    #6b7280;
+    --radius:   12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; min-height: 100vh; }
+
+  /* ── Layout ── */
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; border-bottom: 1px solid var(--border); background: var(--card); position: sticky; top: 0; z-index: 10; }
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
+  .logo { font-size: 18px; font-weight: 700; color: var(--green); letter-spacing: -0.5px; }
+  .badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .badge-green  { background: rgba(0,230,118,.15); color: var(--green);  border: 1px solid rgba(0,230,118,.3); }
+  .badge-red    { background: rgba(255,77,77,.15);  color: var(--red);    border: 1px solid rgba(255,77,77,.3); }
+  .badge-yellow { background: rgba(255,214,0,.15);  color: var(--yellow); border: 1px solid rgba(255,214,0,.3); }
+  .refresh-info { font-size: 12px; color: var(--muted); }
+
+  .page { padding: 24px; max-width: 1400px; margin: 0 auto; }
+
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  @media (max-width: 1100px) { .grid-4 { grid-template-columns: repeat(2,1fr); } .grid-3 { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 700px)  { .grid-4,.grid-3,.grid-2 { grid-template-columns: 1fr; } }
+
+  /* ── Cards ── */
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+  .card-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 8px; }
+  .card-value { font-size: 26px; font-weight: 700; line-height: 1.2; }
+  .card-sub   { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .positive   { color: var(--green); }
+  .negative   { color: var(--red);   }
+  .neutral    { color: var(--text);  }
+
+  /* ── Section headers ── */
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .section-title  { font-size: 15px; font-weight: 600; }
+  .section-badge  { font-size: 11px; color: var(--muted); background: var(--border); padding: 3px 8px; border-radius: 6px; }
+
+  /* ── Tables ── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th    { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td    { padding: 11px 12px; border-bottom: 1px solid rgba(255,255,255,.04); font-size: 13px; white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,.02); }
+
+  /* ── Action pills ── */
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+  .pill-buy    { background: rgba(79,195,247,.15); color: var(--blue);   }
+  .pill-tp1    { background: rgba(0,230,118,.15);  color: var(--green);  }
+  .pill-stop   { background: rgba(255,77,77,.15);  color: var(--red);    }
+  .pill-moon   { background: rgba(124,77,255,.15); color: var(--purple); }
+  .pill-floor  { background: rgba(255,214,0,.15);  color: var(--yellow); }
+
+  /* ── Progress bar ── */
+  .progress { height: 4px; background: var(--border); border-radius: 2px; margin-top: 8px; }
+  .progress-fill { height: 100%; border-radius: 2px; background: var(--green); transition: width .4s; }
+
+  /* ── Scanner reasons ── */
+  .reason-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .reason-label { flex: 1; font-size: 12px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .reason-count { font-size: 12px; font-weight: 600; color: var(--muted); min-width: 36px; text-align: right; }
+  .reason-bar   { height: 6px; background: var(--border); border-radius: 3px; width: 120px; flex-shrink: 0; }
+  .reason-fill  { height: 100%; border-radius: 3px; background: var(--blue); }
+
+  /* ── Wallet address ── */
+  .addr { font-family: monospace; font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; max-width: 200px; display: inline-block; vertical-align: middle; }
+
+  /* ── Spinner ── */
+  .spin { display: inline-block; width: 12px; height: 12px; border: 2px solid var(--border); border-top-color: var(--green); border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Chart ── */
+  .chart-wrap { position: relative; height: 200px; }
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="logo">◎ Meme Bot</span>
+    <span id="bot-badge" class="badge badge-yellow">Loading...</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:16px;">
+    <span id="wallet-info" style="font-size:13px;color:var(--muted);">—</span>
+    <span class="refresh-info">Auto-refresh <span id="countdown">30</span>s</span>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- Row 1: Status + Balance + P&L cards -->
+  <div class="grid-4">
+    <div class="card">
+      <div class="card-title">Uptime</div>
+      <div class="card-value neutral" id="uptime-val">—</div>
+      <div class="card-sub" id="restarts-val">—</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Wallet Balance</div>
+      <div class="card-value neutral" id="balance-usd">—</div>
+      <div class="card-sub" id="balance-sol">—</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Today's P&amp;L</div>
+      <div class="card-value" id="pnl-today">—</div>
+      <div class="card-sub" id="pnl-today-sub">—</div>
+    </div>
+    <div class="card">
+      <div class="card-title">All-Time P&amp;L</div>
+      <div class="card-value" id="pnl-alltime">—</div>
+      <div class="card-sub" id="pnl-alltime-sub">—</div>
+    </div>
+  </div>
+
+  <!-- Row 2: Weekly + Monthly + Scanner summary -->
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">7-Day P&amp;L</div>
+      <div class="card-value" id="pnl-week">—</div>
+      <div class="card-sub" id="pnl-week-sub">—</div>
+    </div>
+    <div class="card">
+      <div class="card-title">30-Day P&amp;L</div>
+      <div class="card-value" id="pnl-month">—</div>
+      <div class="card-sub" id="pnl-month-sub">—</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Scanner (24h)</div>
+      <div class="card-value neutral" id="scanner-today">—</div>
+      <div class="card-sub" id="scanner-pass-rate">—</div>
+      <div class="progress"><div class="progress-fill" id="scanner-bar" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <!-- Row 3: P&L Chart + Scanner reasons -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="section-header">
+        <span class="section-title">30-Day P&amp;L</span>
+      </div>
+      <div class="chart-wrap"><canvas id="pnl-chart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="section-header">
+        <span class="section-title">Top Rejection Reasons</span>
+        <span class="section-badge" id="total-scanned">—</span>
+      </div>
+      <div id="reasons-list"></div>
+    </div>
+  </div>
+
+  <!-- Open Positions -->
+  <div class="card" style="margin-bottom:24px">
+    <div class="section-header">
+      <span class="section-title">Open Positions</span>
+      <span class="section-badge" id="positions-count">0</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Token</th><th>Entry Price</th><th>Current Price</th>
+          <th>Multiplier</th><th>P&amp;L</th><th>Remaining</th><th>Opened</th>
+        </tr></thead>
+        <tbody id="positions-body"><tr><td colspan="7" style="color:var(--muted);text-align:center;padding:20px">No open positions</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Trade History -->
+  <div class="card">
+    <div class="section-header">
+      <span class="section-title">Trade History</span>
+      <span class="section-badge" id="trades-count">—</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Time</th><th>Token</th><th>Action</th>
+          <th>Price</th><th>Amount</th><th>Multiplier</th><th>P&amp;L</th><th>Tx</th>
+        </tr></thead>
+        <tbody id="trades-body"><tr><td colspan="8" style="color:var(--muted);text-align:center;padding:20px">No trades yet</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+const KEY = new URLSearchParams(location.search).get('key') || '';
+const H = KEY ? `?key=${KEY}` : '';
+
+let chart = null;
+let countdown = 30;
+
+// ── Fetch helpers ──────────────────────────────────────────────────────────────
+async function get(url) {
+  const r = await fetch(url + H);
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+
+// ── Format helpers ─────────────────────────────────────────────────────────────
+function fmtUSD(v) {
+  if (v == null) return '—';
+  const n = parseFloat(v);
+  return (n >= 0 ? '+' : '') + '$' + Math.abs(n).toFixed(2);
+}
+function fmtPct(v) { return v == null ? '—' : parseFloat(v).toFixed(1) + '%'; }
+function fmtMult(v) { return v == null ? '—' : parseFloat(v).toFixed(2) + '×'; }
+function fmtUptime(ms) {
+  if (!ms) return '—';
+  const s = Math.floor(ms / 1000);
+  const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+  if (d > 0) return `${d}d ${h}h ${m}m`;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+function fmtTime(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts.replace(' ', 'T') + 'Z');
+  return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+function pnlClass(v) { return parseFloat(v) >= 0 ? 'positive' : 'negative'; }
+function colorVal(v, el) {
+  el.textContent = fmtUSD(v);
+  el.className = 'card-value ' + pnlClass(v);
+}
+function actionPill(a) {
+  const map = { buy:'pill-buy', tp1:'pill-tp1', stop_loss:'pill-stop', moonbag_exit:'pill-moon', profit_floor:'pill-floor' };
+  const cls = map[a] || 'pill-buy';
+  const label = { buy:'BUY', tp1:'TP1', stop_loss:'STOP', moonbag_exit:'MOON', profit_floor:'FLOOR' }[a] || a.toUpperCase();
+  return `<span class="pill ${cls}">${label}</span>`;
+}
+
+// ── Load status ────────────────────────────────────────────────────────────────
+async function loadStatus() {
+  const d = await get('/api/status');
+  const badge = document.getElementById('bot-badge');
+  if (d.botStatus === 'online') {
+    badge.textContent = '● Running';
+    badge.className = 'badge badge-green';
+  } else if (d.botStatus === 'stopped') {
+    badge.textContent = '● Stopped';
+    badge.className = 'badge badge-red';
+  } else {
+    badge.textContent = '● ' + d.botStatus;
+    badge.className = 'badge badge-yellow';
+  }
+  document.getElementById('uptime-val').textContent = fmtUptime(d.botUptime);
+  document.getElementById('restarts-val').textContent = `${d.restarts ?? 0} restarts total`;
+  document.getElementById('balance-usd').textContent = '$' + (d.balance.usd || 0).toFixed(2);
+  document.getElementById('balance-sol').textContent = (d.balance.sol || 0).toFixed(4) + ' SOL';
+  if (d.balance.address) {
+    document.getElementById('wallet-info').innerHTML =
+      `<span class="addr">${d.balance.address}</span>`;
+  }
+}
+
+// ── Load P&L ──────────────────────────────────────────────────────────────────
+async function loadPnL() {
+  const d = await get('/api/pnl');
+  function render(data, valId, subId) {
+    colorVal(data.total_profit, document.getElementById(valId));
+    const wr = data.trades > 0 ? ((data.winners / data.trades) * 100).toFixed(0) : 0;
+    document.getElementById(subId).textContent =
+      `${data.trades} trades · Win ${wr}% · Best ${fmtUSD(data.best_trade)}`;
+  }
+  render(d.today,   'pnl-today',   'pnl-today-sub');
+  render(d.week,    'pnl-week',    'pnl-week-sub');
+  render(d.month,   'pnl-month',   'pnl-month-sub');
+  render(d.alltime, 'pnl-alltime', 'pnl-alltime-sub');
+}
+
+// ── Load Chart ─────────────────────────────────────────────────────────────────
+async function loadChart() {
+  const rows = await get('/api/chart/pnl');
+  const labels = rows.map(r => r.day);
+  const data   = rows.map(r => parseFloat(r.pnl).toFixed(2));
+  const colors = data.map(v => v >= 0 ? 'rgba(0,230,118,0.7)' : 'rgba(255,77,77,0.7)');
+
+  if (chart) { chart.destroy(); chart = null; }
+  const ctx = document.getElementById('pnl-chart').getContext('2d');
+  chart = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets: [{ data, backgroundColor: colors, borderRadius: 4 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: {
+        callbacks: { label: c => ' $' + parseFloat(c.raw).toFixed(2) }
+      }},
+      scales: {
+        x: { ticks: { color: '#6b7280', font: { size: 10 } }, grid: { color: '#1f1f2e' } },
+        y: { ticks: { color: '#6b7280', font: { size: 10 }, callback: v => '$' + v }, grid: { color: '#1f1f2e' } }
+      }
+    }
+  });
+}
+
+// ── Load Scanner ───────────────────────────────────────────────────────────────
+async function loadScanner() {
+  const d = await get('/api/scanner');
+  document.getElementById('scanner-today').textContent = d.today + ' scanned';
+  document.getElementById('scanner-pass-rate').textContent = `${d.passed} passed · ${d.passRate}% pass rate`;
+  document.getElementById('scanner-bar').style.width = Math.min(parseFloat(d.passRate) * 5, 100) + '%';
+  document.getElementById('total-scanned').textContent = d.total + ' total scanned';
+
+  const max = d.reasons[0]?.count || 1;
+  document.getElementById('reasons-list').innerHTML = d.reasons.map(r => `
+    <div class="reason-row">
+      <div class="reason-label" title="${r.reason}">${r.reason}</div>
+      <div class="reason-bar"><div class="reason-fill" style="width:${(r.count/max*100).toFixed(0)}%"></div></div>
+      <div class="reason-count">${r.count}</div>
+    </div>
+  `).join('') || '<div style="color:var(--muted);font-size:13px">No data yet</div>';
+}
+
+// ── Load Positions ─────────────────────────────────────────────────────────────
+async function loadPositions() {
+  const rows = await get('/api/positions');
+  document.getElementById('positions-count').textContent = rows.length + ' open';
+  const tbody = document.getElementById('positions-body');
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="color:var(--muted);text-align:center;padding:20px">No open positions</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(p => {
+    const mult  = parseFloat(p.multiplier || 1);
+    const pnl   = parseFloat(p.profitUSD || 0);
+    const cls   = pnl >= 0 ? 'positive' : 'negative';
+    return `<tr>
+      <td><b>${p.token_symbol || p.token_mint.slice(0,8)}</b><br>
+          <span style="font-size:11px;color:var(--muted);font-family:monospace">${p.token_mint.slice(0,12)}...</span></td>
+      <td>$${parseFloat(p.entry_price).toExponential(4)}</td>
+      <td>$${parseFloat(p.currentPrice||0).toExponential(4)}</td>
+      <td class="${mult>=1?'positive':'negative'}">${fmtMult(mult)}</td>
+      <td class="${cls}">${fmtUSD(pnl)}</td>
+      <td>${fmtPct(p.remaining_pct)}</td>
+      <td style="color:var(--muted)">${fmtTime(p.opened_at)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Load Trades ────────────────────────────────────────────────────────────────
+async function loadTrades() {
+  const rows = await get('/api/trades?limit=50');
+  document.getElementById('trades-count').textContent = rows.length + ' shown';
+  const tbody = document.getElementById('trades-body');
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="8" style="color:var(--muted);text-align:center;padding:20px">No trades yet</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(t => {
+    const pnl  = t.profit_usd;
+    const cls  = pnl == null ? '' : pnl >= 0 ? 'positive' : 'negative';
+    const txLink = t.tx_hash
+      ? `<a href="https://solscan.io/tx/${t.tx_hash}" target="_blank" style="color:var(--blue);text-decoration:none;font-size:11px">View</a>`
+      : '—';
+    return `<tr>
+      <td style="color:var(--muted)">${fmtTime(t.timestamp)}</td>
+      <td><b>${t.token_symbol || t.token_mint?.slice(0,8)}</b></td>
+      <td>${actionPill(t.action)}</td>
+      <td>${t.price_usd ? '$' + parseFloat(t.price_usd).toExponential(4) : '—'}</td>
+      <td>${t.amount_usd ? '$' + parseFloat(t.amount_usd).toFixed(2) : '—'}</td>
+      <td>${t.multiplier ? fmtMult(t.multiplier) : '—'}</td>
+      <td class="${cls}">${pnl != null ? fmtUSD(pnl) : '—'}</td>
+      <td>${txLink}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Load all ───────────────────────────────────────────────────────────────────
+async function loadAll() {
+  await Promise.allSettled([
+    loadStatus(), loadPnL(), loadChart(),
+    loadScanner(), loadPositions(), loadTrades()
+  ]);
+}
+
+// ── Countdown timer ────────────────────────────────────────────────────────────
+function tick() {
+  countdown--;
+  document.getElementById('countdown').textContent = countdown;
+  if (countdown <= 0) {
+    countdown = 30;
+    loadAll();
+  }
+  setTimeout(tick, 1000);
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────────
+loadAll();
+setTimeout(tick, 1000);
+</script>
+</body>
+</html>

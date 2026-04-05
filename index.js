@@ -82,7 +82,7 @@ async function main() {
 
   console.log('[BOOT] ✅ Bot is live. Monitoring Solana for new tokens...');
   console.log(`[BOOT] Trade size: $${config.trade.entryUSD} | Slippage: ${config.trade.maxSlippagePct}%`);
-  console.log(`[BOOT] Filters: minLiq=$${config.filters.minLiquidityUSD} | minVol=$${config.filters.minBuyVolumeUSD}`);
+  console.log(`[BOOT] Filters: minLiq=${config.filters.minLiquiditySOL}SOL | minTxns=${config.filters.minTxns} | minUnique=${config.filters.minUniqueWalletPct}%`);
   console.log('');
 }
 

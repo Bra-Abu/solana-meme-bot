@@ -23,19 +23,21 @@ async function send(text, parseMode = 'HTML') {
 }
 
 // ── Alerts ─────────────────────────────────────────────────────────────────────
-async function alertTokenFound(symbol, mint, pairData) {
-  const liq = pairData?.liquidity?.usd?.toFixed(0) || '?';
-  const vol = pairData?.volume?.h24?.toFixed(0) || '?';
-  const age = pairData?.pairCreatedAt
-    ? ((Date.now() - pairData.pairCreatedAt) / 60_000).toFixed(1)
-    : '?';
+async function alertTokenFound(symbol, mint, onChainData) {
+  const liq  = onChainData?.liquidityUSD  ? `$${onChainData.liquidityUSD.toFixed(0)} (${onChainData.liquiditySOL.toFixed(1)} SOL)` : '?';
+  const age  = onChainData?.ageMinutes    ? onChainData.ageMinutes.toFixed(1) : '?';
+  const txns = onChainData?.txnCount      ? onChainData.txnCount : '?';
+  const uniq = onChainData?.uniqueWallets ? onChainData.uniqueWallets : '?';
+  const buys = onChainData?.buys          ?? '?';
+  const sells= onChainData?.sells         ?? '?';
 
   await send(
     `🔍 <b>Token Found — ${symbol}</b>\n` +
     `<code>${mint}</code>\n\n` +
-    `💧 Liquidity: $${liq}\n` +
-    `📊 24h Volume: $${vol}\n` +
-    `⏱ Age: ${age} mins\n\n` +
+    `💧 Liquidity: ${liq}\n` +
+    `⏱ Age: ${age} mins\n` +
+    `📊 Txns: ${txns} (${uniq} unique wallets)\n` +
+    `📈 Buys/Sells: ${buys}/${sells}\n\n` +
     `⏳ Executing buy...`
   );
 }

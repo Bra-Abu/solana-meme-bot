@@ -6,26 +6,26 @@ module.exports = {
   rpcUrl: `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`,
   walletAddress: process.env.WALLET_ADDRESS,
 
-  // ── Token Filter Criteria ──────────────────────────────────────────────────
+  // ── Token Filter Criteria (fully on-chain via Helius) ─────────────────────
   filters: {
-    minAgeMinutes: 10,
-    maxAgeMinutes: 30,
-    minLiquidityUSD: 100_000,
-    minBuyVolumeUSD: 100_000,
-    minSellVolumeUSD: 50_000,
-    minBuyTransactions: 50,
-    minSellTransactions: 50,
-    minUniqueBuyers: 50,
+    // Age window (from oldest pool signature)
+    minAgeMinutes: 2,
+    maxAgeMinutes: 60,
 
-    // Non-fresh whale wallets
-    minWhaleWallets: 10,           // must have >10 qualifying whale wallets
-    whaleMinBuyUSD: 1_000,         // each whale bought >$1,000
-    walletMinAgeDays: 7,           // wallet older than 7 days
-    walletMinTxCount: 20,          // wallet has >20 transactions
-    walletMinTxSizeUSD: 500,       // each of those txns >$500
+    // Liquidity — pool's SOL vault balance
+    minLiquiditySOL: 30,           // ~$4,800 at $160/SOL
+
+    // Activity
+    minTxns: 50,                   // minimum transactions on pool
+    minUniqueWalletPct: 60,        // ≥60% of txns from unique wallets (anti-wash)
+
+    // Buy/sell direction (from enhanced transactions)
+    minBuySellRatio: 1.1,          // buys must exceed sells by ≥10%
+
+    // LP rug check
+    maxLPConcentrationPct: 50,     // single non-burn wallet can't hold >50% of LP
 
     // Safety
-    maxSingleHolderPct: 30,        // no wallet holds >30% of supply
     requireMintRevoked: true,
     requireFreezeDisabled: true,
   },
