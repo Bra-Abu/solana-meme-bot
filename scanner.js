@@ -9,7 +9,6 @@ const { isPaused } = require('./state');
 const processing = new Set();
 const seenPools   = new Set();
 
-const RAYDIUM_ID    = '675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8';
 const PUMPSWAP_ID   = 'pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA';
 const EVAL_DELAY_MS = 2 * 60 * 1000; // wait 2 min before evaluating a new pool
 
@@ -86,43 +85,7 @@ function startScanner() {
   const connection = getConnection();
   const { PublicKey } = require('@solana/web3.js');
 
-  console.log('[SCANNER] Starting log listeners for new Raydium + PumpSwap pools...');
-
-  // ── Raydium AMM v4 — initialize2 ─────────────────────────────────────────────
-  // Instruction accounts:
-  //   [4]  amm (pool address)
-  //   [7]  lp_mint
-  //   [8]  coin_mint  (base token)
-  //   [9]  pc_mint    (quote, usually SOL)
-  //   [10] pool_coin_token_account (base vault)
-  //   [11] pool_pc_token_account   (quote vault = SOL vault)
-  connection.onLogs(
-    new PublicKey(RAYDIUM_ID),
-    async ({ signature, logs, err }) => {
-      if (err) return;
-      if (!logs.some(l => l.includes('initialize2'))) return;
-
-      try {
-        const accs = await getTxAccounts(connection, signature, RAYDIUM_ID);
-        if (!accs || accs.length < 12) return;
-
-        const poolAddress = accs[4];
-        const coinMint    = accs[8];
-        const pcMint      = accs[9];
-        const lpMint      = accs[7];
-        const quoteTokenAccount = SOL_MINTS.has(pcMint) ? accs[11] : accs[10];
-
-        const newToken = SOL_MINTS.has(coinMint) ? pcMint : coinMint;
-        if (!newToken || IGNORE_MINTS.has(newToken) || SOL_MINTS.has(newToken)) return;
-        if (seenPools.has(newToken)) return;
-        seenPools.add(newToken);
-
-        console.log(`[SCANNER] 🆕 New Raydium pool: ${newToken.slice(0, 8)} — evaluating in 2 min`);
-        setTimeout(() => processToken(newToken, poolAddress, { quoteTokenAccount, lpMint, dex: 'raydium' }), EVAL_DELAY_MS);
-      } catch { }
-    },
-    'confirmed'
-  );
+  console.log('[SCANNER] Starting log listener for new PumpSwap pools...');
 
   // ── PumpSwap AMM — Create ─────────────────────────────────────────────────────
   // Instruction accounts:
@@ -165,7 +128,7 @@ function startScanner() {
     'confirmed'
   );
 
-  console.log('[SCANNER] ✅ Listening for new Raydium + PumpSwap pool creations...');
+  console.log('[SCANNER] ✅ Listening for new PumpSwap pool creations...');
 }
 
 module.exports = { startScanner, processToken };
