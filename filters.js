@@ -158,13 +158,13 @@ async function runAllFilters(tokenMint, poolAddress, poolMeta = {}) {
     if (!activity) return { passed: false, reason: 'No pool signatures found' };
 
     if (activity.ageMinutes < config.filters.minAgeMinutes)
-      return { passed: false, reason: `Too new: ${activity.ageMinutes.toFixed(1)} min` };
+      return { passed: false, reason: 'Too new' };
     if (activity.ageMinutes > config.filters.maxAgeMinutes)
-      return { passed: false, reason: `Too old: ${activity.ageMinutes.toFixed(1)} min` };
+      return { passed: false, reason: 'Too old' };
     if (activity.txnCount < config.filters.minTxns)
-      return { passed: false, reason: `Low activity: ${activity.txnCount} txns` };
+      return { passed: false, reason: 'Low activity' };
     if (activity.uniquePct < config.filters.minUniqueWalletPct)
-      return { passed: false, reason: `Wash risk: ${activity.uniquePct.toFixed(1)}% unique wallets` };
+      return { passed: false, reason: 'Wash risk' };
 
     // ── Gate ②: Liquidity ─────────────────────────────────────────────────────
     let liquiditySOL = 0;
@@ -172,12 +172,12 @@ async function runAllFilters(tokenMint, poolAddress, poolMeta = {}) {
       try { liquiditySOL = await getLiquidity(poolMeta.quoteTokenAccount); } catch { }
     }
     if (liquiditySOL < config.filters.minLiquiditySOL)
-      return { passed: false, reason: `Low liquidity: ${liquiditySOL.toFixed(1)} SOL` };
+      return { passed: false, reason: 'Low liquidity' };
 
     // ── Gate ⑤: Buy/sell ratio ────────────────────────────────────────────────
     const buySell = await getBuySellRatio(activity.signatures, poolAddress, tokenMint);
     if (buySell.ratio < config.filters.minBuySellRatio)
-      return { passed: false, reason: `Net selling: ${buySell.buys}B/${buySell.sells}S` };
+      return { passed: false, reason: 'Net selling' };
 
     // ── Gate ⑥: Safety ───────────────────────────────────────────────────────
     const safety = await checkSafety(tokenMint);
@@ -185,7 +185,7 @@ async function runAllFilters(tokenMint, poolAddress, poolMeta = {}) {
 
     // ── Gate ⑦: LP rug check ──────────────────────────────────────────────────
     const lp = await checkLPSafety(poolMeta.lpMint);
-    if (!lp.passed) return { passed: false, reason: `LP rug risk: ${lp.topPct}% concentrated` };
+    if (!lp.passed) return { passed: false, reason: 'LP rug risk' };
 
     // ── Enrich with USD values + token metadata for Telegram alert ─────────────
     const solPrice    = await getSolPriceUSD();
