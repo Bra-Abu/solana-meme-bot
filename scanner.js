@@ -142,7 +142,6 @@ function startScanner() {
         const accs = await getTxAccounts(connection, signature, PUMPSWAP_ID);
         if (!accs || accs.length < 7) return;
 
-        const poolAddress       = accs[0];
         const baseMint          = accs[2];
         const quoteMint         = accs[3];
         const lpMint            = accs[4];
@@ -153,8 +152,14 @@ function startScanner() {
         if (seenPools.has(newToken)) return;
         seenPools.add(newToken);
 
+        // Derive pool PDA: seeds = ["pool", baseMint, quoteMint]
+        const [poolAddress] = PublicKey.findProgramAddressSync(
+          [Buffer.from('pool'), new PublicKey(baseMint).toBuffer(), new PublicKey(quoteMint).toBuffer()],
+          new PublicKey(PUMPSWAP_ID)
+        );
+
         console.log(`[SCANNER] 🆕 New PumpSwap pool: ${newToken.slice(0, 8)} — evaluating in 2 min`);
-        setTimeout(() => processToken(newToken, poolAddress, { quoteTokenAccount, lpMint, dex: 'pumpswap' }), EVAL_DELAY_MS);
+        setTimeout(() => processToken(newToken, poolAddress.toString(), { quoteTokenAccount, lpMint, dex: 'pumpswap' }), EVAL_DELAY_MS);
       } catch { }
     },
     'confirmed'
