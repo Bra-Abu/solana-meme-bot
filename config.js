@@ -17,7 +17,7 @@ module.exports = {
 
     // Activity
     minTxns: 50,                   // minimum transactions on pool
-    minUniqueWalletPct: 60,        // ≥60% of txns from unique wallets (anti-wash)
+    minUniqueWalletPct: 30,        // ≥30% of txns from unique wallets (anti-wash)
 
     // Buy/sell direction (from enhanced transactions)
     minBuySellRatio: 1.1,          // buys must exceed sells by ≥10%
