@@ -163,8 +163,10 @@ async function runAllFilters(tokenMint, poolAddress, poolMeta = {}) {
       return { passed: false, reason: 'Too old' };
     if (activity.txnCount < config.filters.minTxns)
       return { passed: false, reason: 'Low activity' };
-    if (activity.uniquePct < config.filters.minUniqueWalletPct)
+    if (activity.uniquePct < config.filters.minUniqueWalletPct) {
+      console.log(`[Filter] Wash risk: ${activity.uniqueWallets} unique / ${activity.txnCount} txns = ${activity.uniquePct.toFixed(1)}%`);
       return { passed: false, reason: 'Wash risk' };
+    }
 
     // ── Gate ②: Liquidity ─────────────────────────────────────────────────────
     let liquiditySOL = 0;
