@@ -13,11 +13,11 @@ module.exports = {
     maxAgeMinutes: 60,
 
     // Liquidity — pool's SOL vault balance
-    minLiquiditySOL: 30,           // ~$4,800 at $160/SOL
+    minLiquiditySOL: 10,           // ~$1,600 at $160/SOL
 
     // Activity
-    minTxns: 50,                   // minimum transactions on pool
-    minUniqueWalletPct: 30,        // ≥30% of txns from unique wallets (anti-wash)
+    minTxns: 20,                   // minimum transactions on pool
+    minUniqueWalletPct: 10,        // ≥10% of txns from unique wallets (anti-wash)
 
     // Buy/sell direction (from enhanced transactions)
     minBuySellRatio: 1.1,          // buys must exceed sells by ≥10%
